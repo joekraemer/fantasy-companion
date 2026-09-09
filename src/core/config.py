@@ -4,9 +4,6 @@ from datetime import datetime
 from dotenv import load_dotenv
 from functools import lru_cache
 
-# Load environment variables at module import
-load_dotenv()
-
 @dataclass(frozen=True)
 class Settings:
     LEAGUE_ID: int
@@ -21,6 +18,9 @@ def get_settings() -> Settings:
     Factory to retrieve typed settings from environment variables.
     Cached via lru_cache to ensure singleton-like behavior.
     """
+    # Load environment variables
+    load_dotenv()
+
     # Required variables
     required_vars = ["LEAGUE_ID", "SWID", "ESPN_S2"]
     missing = [var for var in required_vars if not os.environ.get(var)]
