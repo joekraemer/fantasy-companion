@@ -89,3 +89,10 @@ def test_get_scoring_rules(mock_league):
     
     assert rules["pass_yds"] == 0.04
     assert rules["pass_td"] == 4
+
+def test_get_scoring_rules_missing(mock_league):
+    client = ESPNClient(league_id=123, year=2024)
+    # Simulate missing settings
+    delattr(client.league, 'settings')
+    rules = client.get_scoring_rules()
+    assert rules == {}

@@ -42,9 +42,9 @@ class ESPNClient:
         for player in team.roster:
             roster.append({
                 "name": player.name,
-                "position": player.position,
+                "position": getattr(player, 'position', 'UNKNOWN'),
                 "injuryStatus": getattr(player, 'injuryStatus', 'ACTIVE'),
-                "proTeam": player.proTeam,
+                "proTeam": getattr(player, 'proTeam', 'FA'),
                 "eligibleSlots": getattr(player, 'eligibleSlots', [])
             })
         return roster
@@ -59,9 +59,9 @@ class ESPNClient:
         for player in free_agents:
             fa_pool.append({
                 "name": player.name,
-                "position": player.position,
+                "position": getattr(player, 'position', 'UNKNOWN'),
                 "injuryStatus": getattr(player, 'injuryStatus', 'ACTIVE'),
-                "proTeam": player.proTeam,
+                "proTeam": getattr(player, 'proTeam', 'FA'),
                 "projectedPoints": getattr(player, 'projected_points', 0)
             })
         return fa_pool
