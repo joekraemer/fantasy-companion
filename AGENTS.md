@@ -25,7 +25,7 @@ To run or develop locally, execute the following from the workspace root:
    source venv/bin/activate
    pip install -r requirements.txt
    ```
-2. **Configuration:** Verify the `.env` file is present and populated with ESPN league credentials (`LEAGUE_ID`, `SWID`, `espn_s2`).
+2. **Configuration:** Verify the `.env` file is present and populated with ESPN league credentials (`LEAGUE_ID`, `SWID`, `ESPN_S2`).
 3. **Run Application:**
    ```bash
    streamlit run app.py
