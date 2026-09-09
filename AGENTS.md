@@ -61,4 +61,4 @@ To maintain high code quality, we utilize an AI peer-review system:
 1. When a significant feature is completed, the primary AI agent should create a Pull Request or Branch.
 2. A **subagent** should be spun up (e.g., using the `invoke_subagent` tool).
 3. The reviewer subagent will analyze the diff, check for edge cases, performance, and adherence to `AGENTS.md`.
-4. The primary agent will address the subagent's feedback, push updates, and merge once approved.
+4. The primary agent will address the subagent's feedback and push updates. **ONLY the human user is authorized to merge Pull Requests into the main branch. Agents must NEVER execute a merge.**
