@@ -30,11 +30,11 @@ def test_load_schedule_metadata():
         assert 'week' in df.columns
         assert 'spread_line' in df.columns
         
-        # Check NaN replacement for temp and wind
+        # Check NaN preservation for temp and wind
         # The second game (BAL @ KC in dome) has None for temp/wind
         dome_game = df[df['away_team'] == 'BAL'].iloc[0]
-        assert dome_game['temp'] == 'N/A'
-        assert dome_game['wind'] == 'N/A'
+        assert pd.isna(dome_game['temp'])
+        assert pd.isna(dome_game['wind'])
         
         # The first game (DET @ KC) has numeric temp/wind
         outdoor_game = df[df['away_team'] == 'DET'].iloc[0]

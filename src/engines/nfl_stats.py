@@ -23,10 +23,4 @@ def load_schedule_metadata(year: int) -> pd.DataFrame:
     existing_cols = [col for col in cols_to_keep if col in df.columns]
     df = df[existing_cols].copy()
     
-    # Clean up empty values in weather for dome games
-    if 'temp' in df.columns:
-        df['temp'] = df['temp'].fillna('N/A')
-    if 'wind' in df.columns:
-        df['wind'] = df['wind'].fillna('N/A')
-        
     return df

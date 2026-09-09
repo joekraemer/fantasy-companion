@@ -54,7 +54,13 @@ class DataManager:
         fa_list = client.get_free_agents(size=size)
         fa_df = pd.DataFrame(fa_list)
         
+        # Define required columns for the UI
+        required_cols = ['opponent', 'spread_line', 'total_line', 'roof', 'temp', 'wind']
+        
         if fa_df.empty or schedule_df.empty:
+            if not fa_df.empty:
+                for col in required_cols:
+                    fa_df[col] = pd.NA
             return fa_df
 
         # Filter schedule for the requested week
@@ -76,6 +82,8 @@ class DataManager:
         team_games = pd.concat([home_teams, away_teams])
         
         if team_games.empty:
+            for col in required_cols:
+                fa_df[col] = pd.NA
             return fa_df
 
         # Merge free agents with their game info
