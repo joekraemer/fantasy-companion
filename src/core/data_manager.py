@@ -95,3 +95,15 @@ class DataManager:
         )
         
         return merged_df
+
+    def get_my_roster(self, team_name: str) -> List[Dict[str, Any]]:
+        client = self.load_espn_context()
+        return client.get_team_roster(team_name)
+        
+    def get_free_agent_pool(self, size: int = 100) -> List[Dict[str, Any]]:
+        client = self.load_espn_context()
+        return client.get_free_agents(size=size)
+        
+    def get_weekly_schedule(self, week: int) -> pd.DataFrame:
+        schedule_df = self.load_game_environment()
+        return schedule_df[schedule_df['week'] == week]

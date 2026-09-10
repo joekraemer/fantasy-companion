@@ -1,10 +1,9 @@
 import streamlit as st
+import pandas as pd
 from src.core.data_manager import DataManager
 from src.core.config import get_settings
 
 st.set_page_config(page_title="Fantasy Companion", page_icon="🏈", layout="wide")
-
-st.title("🏈 Fantasy Companion")
 
 try:
     settings = get_settings()
@@ -23,30 +22,79 @@ def get_data_manager():
 
 dm = get_data_manager()
 
+# --- Sidebar Config ---
 st.sidebar.header("Settings")
-week = st.sidebar.number_input("NFL Week", min_value=1, max_value=18, value=1)
 
-st.header("Free Agent Radar")
-with st.spinner("Fetching free agents and merging Vegas odds..."):
-    # Fetch top 50 free agents merged with game environment
-    df = dm.get_merged_player_pool(week=week, size=50)
+try:
+    client = dm.load_espn_context()
+    league_name = getattr(client.league, 'settings', None)
+    league_name_str = getattr(league_name, 'name', f"League {settings.LEAGUE_ID}")
+    st.sidebar.subheader(league_name_str)
+except Exception:
+    st.sidebar.subheader(f"League {settings.LEAGUE_ID}")
+
+selected_week = st.sidebar.number_input("NFL Week", min_value=1, max_value=18, value=1)
+
+nav_option = st.sidebar.radio(
+    "Navigation", 
+    ["Home", "Matchup Center", "Streaming Hub", "Waiver Radar", "Panic Meter"]
+)
+
+# --- Page Routing ---
+if nav_option == "Home":
+    st.title("🏈 Fantasy Companion")
+    st.markdown("Welcome to the **Fantasy Companion**. All data sources loaded successfully.")
     
-    if df.empty:
-        st.warning("No data found for the requested week.")
-    else:
-        st.dataframe(
-            df[['name', 'position', 'proTeam', 'projectedPoints', 'opponent', 'spread_line', 'total_line', 'roof']],
-            use_container_width=True,
-            hide_index=True
-        )
-
-st.header("My Roster")
-with st.spinner("Fetching roster..."):
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.header("My Roster")
+        try:
+            roster = dm.get_my_roster(settings.TEAM_NAME)
+            st.dataframe(roster, use_container_width=True, hide_index=True)
+        except Exception as e:
+            st.error(f"Error loading roster: {e}")
+            
+    with col2:
+        st.header("Free Agent Pool")
+        try:
+            fa_list = dm.get_free_agent_pool(size=100)
+            st.metric("Free Agents Loaded", len(fa_list))
+            st.dataframe(pd.DataFrame(fa_list), use_container_width=True, hide_index=True)
+        except Exception as e:
+            st.error(f"Error loading free agents: {e}")
+            
+    st.header(f"NFL Schedule (Week {selected_week})")
     try:
-        # Use team name from settings
-        team_name = settings.TEAM_NAME
-        client = dm.load_espn_context()
-        roster = client.get_team_roster(team_name)
-        st.dataframe(roster, use_container_width=True, hide_index=True)
-    except ValueError as e:
-        st.error(str(e))
+        week_schedule = dm.get_weekly_schedule(selected_week)
+        st.dataframe(week_schedule, use_container_width=True, hide_index=True)
+    except Exception as e:
+        st.error(f"Error loading schedule: {e}")
+
+elif nav_option == "Matchup Center":
+    try:
+        from src.ui.views_matchup import render_matchup
+        render_matchup(dm, selected_week, settings)
+    except ImportError:
+        st.info("Matchup Center — Coming Soon")
+        
+elif nav_option == "Streaming Hub":
+    try:
+        from src.ui.views_streaming import render_streaming
+        render_streaming(dm, selected_week, settings)
+    except ImportError:
+        st.info("Streaming Hub — Coming Soon")
+        
+elif nav_option == "Waiver Radar":
+    try:
+        from src.ui.views_waiver import render_waiver
+        render_waiver(dm, selected_week, settings)
+    except ImportError:
+        st.info("Waiver Radar — Coming Soon")
+        
+elif nav_option == "Panic Meter":
+    try:
+        from src.ui.views_panic import render_panic
+        render_panic(dm, selected_week, settings)
+    except ImportError:
+        st.info("Panic Meter — Coming Soon")
