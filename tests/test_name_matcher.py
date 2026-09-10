@@ -16,8 +16,12 @@ def test_normalize_name():
     assert normalize_name("Irv Smith Jr") == "irv smith"
     
     # Edge cases
-    assert normalize_name("DK Metcalf") == "dk metcalf" # Because EDGE_CASES handles it before punct stripping, wait, EDGE_CASES says "dk metcalf": "d.k. metcalf"
-    assert normalize_name("Gabe Davis") == "gabriel davis"
+    assert normalize_name("DK Metcalf") == "dk metcalf" 
+    assert normalize_name("Gabriel Davis") == "gabe davis"
+    
+    # Internal words matching suffixes shouldn't be stripped
+    assert normalize_name("V. Jefferson") == "v jefferson"
+    assert normalize_name("Irv Smith") == "irv smith"
     
     # Nulls / Invalid
     assert normalize_name(None) == ""

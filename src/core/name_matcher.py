@@ -3,8 +3,8 @@ import pandas as pd
 from typing import Dict
 
 EDGE_CASES: Dict[str, str] = {
-    "dk metcalf": "d.k. metcalf",
-    "gabe davis": "gabriel davis",
+    "gabriel davis": "gabe davis",
+    "william fuller": "will fuller",
 }
 
 def normalize_name(name: str) -> str:
@@ -21,19 +21,19 @@ def normalize_name(name: str) -> str:
     # Convert to lowercase
     name = name.lower().strip()
     
-    # Check manual edge cases first
-    if name in EDGE_CASES:
-        name = EDGE_CASES[name]
-        
     # Remove punctuation
     name = re.sub(r'[^\w\s]', '', name)
     
-    # Remove suffixes (jr, sr, ii, iii, iv, v)
-    suffixes = r'\b(jr|sr|ii|iii|iv|v)\b'
+    # Remove suffixes (jr, sr, ii, iii, iv, v) at the end of the string
+    suffixes = r'\b(jr|sr|ii|iii|iv|v)$'
     name = re.sub(suffixes, '', name)
     
     # Clean up excess whitespace
     name = ' '.join(name.split())
+    
+    # Check manual edge cases after fully normalizing
+    if name in EDGE_CASES:
+        name = EDGE_CASES[name]
     
     return name
 
