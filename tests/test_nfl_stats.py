@@ -4,7 +4,8 @@ from src.engines.nfl_stats import (
     get_player_stats,
     get_snap_counts,
     get_schedule,
-    get_implied_team_totals
+    get_implied_team_totals,
+    load_schedule_metadata
 )
 
 def test_get_player_stats():
@@ -65,7 +66,7 @@ def test_get_schedule():
     
     with patch("pandas.read_csv", return_value=mock_df) as mock_read:
         result = get_schedule(2023)
-        mock_read.assert_called_once_with("https://github.com/nflverse/nfldata/raw/master/data/games.csv")
+        mock_read.assert_called_once_with("https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv")
         
         # Should filter by season == 2023
         assert len(result) == 2
@@ -112,3 +113,42 @@ def test_get_implied_team_totals():
         # away = (50 + 3) / 2 = 26.5
         assert row2["home_implied_total"] == 23.5
         assert row2["away_implied_total"] == 26.5
+
+def test_load_schedule_metadata():
+    # Mock data to simulate the games.csv file
+    mock_data = pd.DataFrame({
+        'season': [2024, 2024, 2023],
+        'week': [1, 1, 17],
+        'away_team': ['DET', 'BAL', 'KC'],
+        'home_team': ['KC', 'KC', 'BAL'],
+        'spread_line': [4.5, 3.0, -1.0],
+        'total_line': [54.0, 47.5, 45.0],
+        'roof': ['outdoors', 'dome', 'outdoors'],
+        'temp': [80.0, None, 45.0],
+        'wind': [5.0, None, 15.0],
+        'extra_col': ['ignore', 'ignore', 'ignore']
+    })
+
+    with patch('src.engines.nfl_stats.pd.read_csv') as mock_read_csv:
+        mock_read_csv.return_value = mock_data
+        
+        df = load_schedule_metadata(2024)
+        
+        # Should only have 2024 data (2 rows)
+        assert len(df) == 2
+        
+        # Check columns (extra_col should be filtered out, season shouldn't be strictly kept unless explicitly asked, but our logic didn't ask for it)
+        assert 'extra_col' not in df.columns
+        assert 'week' in df.columns
+        assert 'spread_line' in df.columns
+        
+        # Check NaN preservation for temp and wind
+        # The second game (BAL @ KC in dome) has None for temp/wind
+        dome_game = df[df['away_team'] == 'BAL'].iloc[0]
+        assert pd.isna(dome_game['temp'])
+        assert pd.isna(dome_game['wind'])
+        
+        # The first game (DET @ KC) has numeric temp/wind
+        outdoor_game = df[df['away_team'] == 'DET'].iloc[0]
+        assert outdoor_game['temp'] == 80.0
+        assert outdoor_game['wind'] == 5.0

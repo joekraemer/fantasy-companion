@@ -1,6 +1,8 @@
 import pandas as pd
 from typing import Optional
 
+GAMES_URL = "https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv"
+
 def get_player_stats(year: int) -> pd.DataFrame:
     """
     Downloads and parses season-level player stats parquet file.
@@ -31,8 +33,7 @@ def get_schedule(year: int) -> pd.DataFrame:
     """
     Downloads and parses the games.csv schedule and filters by year.
     """
-    url = "https://github.com/nflverse/nfldata/raw/master/data/games.csv"
-    df = pd.read_csv(url)
+    df = pd.read_csv(GAMES_URL)
     df = df[df['season'] == year].copy()
     
     cols_to_keep = ["game_id", "week", "home_team", "away_team", "spread_line", "total_line", "roof", "temp", "wind"]
@@ -52,4 +53,27 @@ def get_implied_team_totals(year: int, week: int) -> pd.DataFrame:
         df['home_implied_total'] = (df['total_line'] - df['spread_line']) / 2
         df['away_implied_total'] = (df['total_line'] + df['spread_line']) / 2
         
+    return df
+
+def load_schedule_metadata(year: int) -> pd.DataFrame:
+    """
+    Fetches the games schedule and Vegas odds from NFLverse.
+    Filters for the requested season and returns a cleaned DataFrame.
+    """
+    df = pd.read_csv(GAMES_URL)
+    
+    # Filter by year
+    if 'season' in df.columns:
+        df = df[df['season'] == year]
+    
+    # Keep only relevant columns
+    cols_to_keep = [
+        'week', 'away_team', 'home_team', 
+        'spread_line', 'total_line', 'roof', 'temp', 'wind'
+    ]
+    
+    # Ensure columns exist before selecting
+    existing_cols = [col for col in cols_to_keep if col in df.columns]
+    df = df[existing_cols].copy()
+    
     return df

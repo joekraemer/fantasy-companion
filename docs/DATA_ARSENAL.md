@@ -14,6 +14,10 @@ The **Fantasy Companion** relies strictly on battle-tested, high-reliability pub
     - Volume: Target share, air yards share, WOPR (Weighted Opportunity Rating = $1.5 \times \text{target\_share} + 0.7 \times \text{air\_yards\_share}$).
     - Efficiency & Value: Passing/Rushing/Receiving EPA, PACR, RACR, first downs generated.
     - Media: Official high-resolution NFL player headshot URLs.
+  - `pbp/play_by_play_{year}.parquet` _(used by xFP & Streaming engines)_:
+    - Play-level EPA, WPA, air yards, yards after catch, rush direction.
+    - Sack rate, pressure rate, and interception rate per team (aggregated for D/ST model).
+    - Red zone attempts, goal-to-go conversions (feeds Kicker stall rate model).
   - `snap_counts/snap_counts_{year}.parquet`:
     - Snap counts, offensive snap share %, defensive snap share %, special teams snaps.
   - `schedules/games.csv` (`https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv`):
@@ -40,6 +44,7 @@ The **Fantasy Companion** relies strictly on battle-tested, high-reliability pub
 - **Base Endpoint:** `https://api.sleeper.app/v1/`
 - **Authentication:** None (Completely open)
 - **Rate Limit:** Generous (1000 req/min)
+- **Canonical ID Mapping Role:** The `/players/nfl` endpoint serves as the **master player identity table** for the project. It maps ESPN IDs ↔ Sleeper IDs ↔ Yahoo IDs ↔ Rotowire IDs, enabling cross-platform joins. See `src/core/id_mapper.py`.
 - **Key Datasets:**
   - `GET /players/nfl/trending/add?lookback_hours=24&limit=25`:
     - League-wide waiver wire additions across 100,000+ active leagues in real time.
@@ -69,3 +74,16 @@ The **Fantasy Companion** relies strictly on battle-tested, high-reliability pub
   - ESPN NFL Breaking News: `https://www.espn.com/espn/rss/nfl/news`
   - ProFootballTalk / NBC Sports: `https://profootballtalk.nbcsports.com/feed/`
 - **Usage:** Provides a filtered real-time feed of coach announcements, practice participation reports (DNP / LP / FP), and depth chart shifts.
+
+---
+
+## Implementation Mapping
+
+| Data Source | Module | Status |
+|---|---|---|
+| ESPN Fantasy API | `src/engines/espn_client.py` | ✅ Implemented |
+| NFLverse Parquets & CSV | `src/engines/nfl_stats.py` | 🔲 Not started |
+| Sleeper Trending + ID Map | `src/engines/sleeper_client.py` | 🔲 Not started |
+| Reddit RSS + VADER | `src/engines/sentiment.py` | 🔲 Not started |
+| News RSS Feeds | `src/engines/sentiment.py` (shared) | 🔲 Not started |
+| Cross-platform ID Joins | `src/core/id_mapper.py` | 🔲 Not started |
