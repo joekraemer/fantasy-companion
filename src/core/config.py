@@ -4,13 +4,15 @@ from datetime import datetime
 from dotenv import load_dotenv
 from functools import lru_cache
 
+from typing import Optional
+
 @dataclass(frozen=True)
 class Settings:
     LEAGUE_ID: int
-    SWID: str
-    ESPN_S2: str
     TEAM_NAME: str
     SEASON_YEAR: int
+    SWID: Optional[str] = None
+    ESPN_S2: Optional[str] = None
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
@@ -22,7 +24,7 @@ def get_settings() -> Settings:
     load_dotenv()
 
     # Required variables
-    required_vars = ["LEAGUE_ID", "SWID", "ESPN_S2"]
+    required_vars = ["LEAGUE_ID"]
     missing = [var for var in required_vars if not os.environ.get(var)]
     
     if missing:
@@ -36,8 +38,8 @@ def get_settings() -> Settings:
     except ValueError:
         raise EnvironmentError("LEAGUE_ID must be an integer.")
 
-    swid = os.environ["SWID"]
-    espn_s2 = os.environ["ESPN_S2"]
+    swid = os.environ.get("SWID")
+    espn_s2 = os.environ.get("ESPN_S2")
 
     # Optional variables with defaults
     team_name = os.environ.get("TEAM_NAME", "Turn Your Head and Goff")

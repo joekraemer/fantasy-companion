@@ -1,31 +1,24 @@
-import os
 import streamlit as st
-from dotenv import load_dotenv
 from src.core.data_manager import DataManager
-
-# Load environment variables
-load_dotenv()
+from src.core.config import get_settings
 
 st.set_page_config(page_title="Fantasy Companion", page_icon="🏈", layout="wide")
 
 st.title("🏈 Fantasy Companion")
 
-# Verify credentials
-league_id = os.getenv("LEAGUE_ID")
-swid = os.getenv("SWID")
-espn_s2 = os.getenv("espn_s2")
-
-if not all([league_id, swid, espn_s2]):
-    st.error("Missing ESPN credentials in `.env`. Please provide LEAGUE_ID, SWID, and espn_s2.")
+try:
+    settings = get_settings()
+except EnvironmentError as e:
+    st.error(str(e))
     st.stop()
 
 @st.cache_resource
 def get_data_manager():
     return DataManager(
-        league_id=int(league_id),
-        year=2024,
-        swid=swid,
-        espn_s2=espn_s2
+        league_id=settings.LEAGUE_ID,
+        year=settings.SEASON_YEAR,
+        swid=settings.SWID,
+        espn_s2=settings.ESPN_S2
     )
 
 dm = get_data_manager()
@@ -50,8 +43,8 @@ with st.spinner("Fetching free agents and merging Vegas odds..."):
 st.header("My Roster")
 with st.spinner("Fetching roster..."):
     try:
-        # Assuming the team name is "Turn Your Head and Goff" based on the issue description
-        team_name = "Turn Your Head and Goff"
+        # Use team name from settings
+        team_name = settings.TEAM_NAME
         client = dm.load_espn_context()
         roster = client.get_team_roster(team_name)
         st.dataframe(roster, use_container_width=True, hide_index=True)
