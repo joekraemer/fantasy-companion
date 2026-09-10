@@ -17,7 +17,7 @@ def get_data_manager():
         league_id=settings.LEAGUE_ID,
         year=settings.SEASON_YEAR,
         swid=settings.SWID,
-        espn_s2=settings.ESPN_S2
+        espn_s2=settings.ESPN_S2, team_name=settings.TEAM_NAME
     )
 
 dm = get_data_manager()
