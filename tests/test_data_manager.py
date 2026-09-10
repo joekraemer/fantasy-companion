@@ -46,3 +46,21 @@ def test_data_manager_get_free_agents(mock_get_sleeper, mock_get_espn):
             assert "sleeper_adds" in fa_df.columns
             assert fa_df.iloc[0]["sleeper_adds"] == 500
 
+@patch("src.core.data_manager.get_espn_client")
+@patch("src.core.data_manager.get_sleeper_client")
+def test_data_manager_get_merged_player_pool(mock_get_sleeper, mock_get_espn):
+    mock_espn = MagicMock()
+    mock_get_espn.return_value = mock_espn
+    mock_espn.get_free_agents.return_value = [{"name": "Gabe Davis", "position": "WR"}]
+    
+    mock_sleeper = MagicMock()
+    mock_get_sleeper.return_value = mock_sleeper
+    
+    dm = DataManager(league_id=123, year=2023, team_name="My Team")
+    
+    with patch.object(dm, 'load_game_environment', return_value=pd.DataFrame({"week": [1], "home_team": ["BUF"], "away_team": ["NYJ"], "spread_line": [2.5], "total_line": [45], "roof": ["outdoors"], "temp": [60], "wind": [10]})):
+        with patch.object(dm, 'get_free_agent_pool', return_value=pd.DataFrame([{"name": "Gabe Davis", "position": "WR", "proTeam": "BUF"}])):
+            df = dm.get_merged_player_pool(week=1)
+            assert len(df) == 1
+            assert "spread_line" in df.columns
+
