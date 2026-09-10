@@ -29,10 +29,10 @@ def test_data_manager_get_merged_player_pool(mock_load_schedule, MockESPNClient)
     # Initialize DataManager
     dm = DataManager(league_id=123, year=2024, swid="X", espn_s2="Y")
     
-    # Avoid streamlit caching issues during testing by mocking the cached methods directly
-    # Streamlit caching works strangely in pytest, so we mock the _get methods
-    with patch.object(dm, '_get_espn_client', return_value=mock_espn_instance), \
-         patch.object(dm, '_get_game_environment', return_value=mock_schedule):
+    # Avoid streamlit caching issues during testing by mocking the public loading methods directly
+    with patch.object(dm, 'load_espn_context', return_value=mock_espn_instance), \
+         patch.object(dm, 'load_game_environment', return_value=mock_schedule), \
+         patch.object(dm, 'get_free_agent_pool', return_value=mock_espn_instance.get_free_agents()):
         
         merged_df = dm.get_merged_player_pool(week=1, size=3)
         
@@ -61,22 +61,17 @@ def test_data_manager_empty_data():
     dm = DataManager(league_id=123, year=2024, swid="X", espn_s2="Y")
     
     # Test when FA pool is empty
-    with patch.object(dm, '_get_espn_client') as mock_espn, \
-         patch.object(dm, '_get_game_environment', return_value=pd.DataFrame()):
+    with patch.object(dm, 'get_free_agent_pool', return_value=[]), \
+         patch.object(dm, 'load_game_environment', return_value=pd.DataFrame()):
         
-        mock_espn.return_value.get_free_agents.return_value = []
         merged_df = dm.get_merged_player_pool(week=1)
         assert merged_df.empty
 
 def test_data_manager_schedule_empty():
     dm = DataManager(league_id=123, year=2024, swid="X", espn_s2="Y")
     
-    with patch.object(dm, '_get_espn_client') as mock_espn, \
-         patch.object(dm, '_get_game_environment', return_value=pd.DataFrame()):
-        
-        mock_espn.return_value.get_free_agents.return_value = [
-            {"name": "Amon-Ra", "proTeam": "DET", "position": "WR", "projectedPoints": 15.0}
-        ]
+    with patch.object(dm, 'get_free_agent_pool', return_value=[{"name": "Amon-Ra", "proTeam": "DET"}]), \
+         patch.object(dm, 'load_game_environment', return_value=pd.DataFrame()):
         
         merged_df = dm.get_merged_player_pool(week=1)
         
