@@ -52,9 +52,12 @@ AI Agents are expected to actively manage project state and code quality via the
 
 ### Issue Tracking & Project Management
 1. **Implementation Plans:** When architecting a new feature, track the proposed implementation plan in a GitHub issue.
-2. **Bugs & Technical Debt:** If you encounter a bug or edge case that cannot be fixed immediately within the current context, **log a GitHub issue** for it.
-3. **Bug Bashing & Investigations:** When investigating complex bugs, log your learnings, stack traces, and hypotheses as comments on the relevant GitHub issue.
-4. **Follow-on Features:** If you come up with an idea for a follow-on feature or optimization, do not scope creep. Instead, log a new GitHub issue labeled `enhancement`.
+2. **Claiming Issues (Concurrency Lock):** To prevent duplicate work, the moment an AI agent begins working on an existing issue, it MUST use the `gh` CLI to claim it:
+   - Add a comment to the issue: `gh issue comment <issue-number> -b "🤖 **AI Agent Claim:** I have begun work on this issue on branch \`<branch-name>\`."`
+   - Add a label to the issue: `gh issue edit <issue-number> --add-label "status: AI-in-progress"` (create the label if it does not exist).
+3. **Bugs & Technical Debt:** If you encounter a bug or edge case that cannot be fixed immediately within the current context, **log a GitHub issue** for it.
+4. **Bug Bashing & Investigations:** When investigating complex bugs, log your learnings, stack traces, and hypotheses as comments on the relevant GitHub issue.
+5. **Follow-on Features:** If you come up with an idea for a follow-on feature or optimization, do not scope creep. Instead, log a new GitHub issue labeled `enhancement`.
 
 ### AI Code Review (Subagent Workflow)
 To maintain high code quality, we utilize an AI peer-review system:
