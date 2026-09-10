@@ -16,6 +16,7 @@ def get_data_manager():
     return DataManager(
         league_id=settings.LEAGUE_ID,
         year=settings.SEASON_YEAR,
+        team_name=settings.TEAM_NAME,
         swid=settings.SWID,
         espn_s2=settings.ESPN_S2
     )
@@ -26,11 +27,11 @@ dm = get_data_manager()
 st.sidebar.header("Settings")
 
 try:
-    client = dm.load_espn_context()
+    client = dm.espn
     league_name = getattr(client.league, 'settings', None)
     league_name_str = getattr(league_name, 'name', f"League {settings.LEAGUE_ID}")
     st.sidebar.subheader(league_name_str)
-except Exception:
+except AttributeError:
     st.sidebar.subheader(f"League {settings.LEAGUE_ID}")
 
 selected_week = st.sidebar.number_input("NFL Week", min_value=1, max_value=18, value=1)
@@ -51,7 +52,7 @@ if nav_option == "Home":
         st.header("My Roster")
         try:
             roster = dm.get_my_roster(settings.TEAM_NAME)
-            if roster:
+            if roster is not None and not roster.empty:
                 st.dataframe(roster, use_container_width=True, hide_index=True)
             else:
                 st.info("No players found on your roster.")
@@ -63,7 +64,7 @@ if nav_option == "Home":
         try:
             fa_list = dm.get_free_agent_pool(size=100)
             st.metric("Free Agents Loaded", len(fa_list))
-            if fa_list:
+            if fa_list is not None and not fa_list.empty:
                 st.dataframe(pd.DataFrame(fa_list), use_container_width=True, hide_index=True)
             else:
                 st.info("No free agents found.")
