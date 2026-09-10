@@ -65,3 +65,6 @@ To maintain high code quality, we utilize an AI peer-review system:
 2. A **subagent** should be spun up (e.g., using the `invoke_subagent` tool).
 3. The reviewer subagent will analyze the diff, check for edge cases, performance, and adherence to `AGENTS.md`.
 4. The primary agent will address the subagent's feedback and push updates. **ONLY the human user is authorized to merge Pull Requests into the main branch. Agents must NEVER execute a merge.**
+
+### Python Environment Rule
+Always use the `venv/` directory for Python virtual environments. Do NOT create or use `.venv/`.

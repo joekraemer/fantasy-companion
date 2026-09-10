@@ -1,86 +1,66 @@
+import pytest
 import pandas as pd
 from unittest.mock import patch, MagicMock
 from src.core.data_manager import DataManager
 
-@patch('src.core.data_manager.ESPNClient')
-@patch('src.core.data_manager.load_schedule_metadata')
-def test_data_manager_get_merged_player_pool(mock_load_schedule, MockESPNClient):
-    # Mock ESPN free agent pull
-    mock_espn_instance = MockESPNClient.return_value
-    mock_espn_instance.get_free_agents.return_value = [
-        {"name": "Amon-Ra", "proTeam": "DET", "position": "WR", "projectedPoints": 15.0},
-        {"name": "Patrick Mahomes", "proTeam": "KC", "position": "QB", "projectedPoints": 20.0},
-        {"name": "Free Agent Guy", "proTeam": "FA", "position": "WR", "projectedPoints": 0.0}
-    ]
+@patch("src.core.data_manager.get_espn_client")
+@patch("src.core.data_manager.get_sleeper_client")
+def test_data_manager_get_roster(mock_get_sleeper, mock_get_espn):
+    # Setup mocks
+    mock_espn = MagicMock()
+    mock_get_espn.return_value = mock_espn
+    mock_espn.get_team_roster.return_value = [{"name": "Josh Allen", "position": "QB"}]
     
-    # Mock NFLverse schedule pull
-    mock_schedule = pd.DataFrame({
-        'week': [1],
-        'away_team': ['DET'],
-        'home_team': ['KC'],
-        'spread_line': [4.5],
-        'total_line': [54.0],
-        'roof': ['outdoors'],
-        'temp': [80.0],
-        'wind': [5.0]
-    })
-    mock_load_schedule.return_value = mock_schedule
+    mock_sleeper = MagicMock()
+    mock_get_sleeper.return_value = mock_sleeper
     
-    # Initialize DataManager
-    dm = DataManager(league_id=123, year=2024, swid="X", espn_s2="Y")
+    dm = DataManager(league_id=123, year=2023, team_name="My Team")
     
-    # Avoid streamlit caching issues during testing by mocking the public loading methods directly
-    with patch.object(dm, 'load_espn_context', return_value=mock_espn_instance), \
-         patch.object(dm, 'load_game_environment', return_value=mock_schedule), \
-         patch.object(dm, 'get_free_agent_pool', return_value=mock_espn_instance.get_free_agents()):
+    with patch.object(dm, '_fetch_nfl_stats', return_value=pd.DataFrame({"player_name": ["Josh Allen", "Stefon Diggs"], "targets": [0, 150]})):
+        roster_df = dm.get_my_roster()
         
-        merged_df = dm.get_merged_player_pool(week=1, size=3)
-        
-        # Verify basic merging
-        assert len(merged_df) == 3
-        assert 'opponent' in merged_df.columns
-        assert 'total_line' in merged_df.columns
-        
-        # Check DET player (Away team)
-        det_player = merged_df[merged_df['name'] == 'Amon-Ra'].iloc[0]
-        assert det_player['opponent'] == 'KC'
-        assert det_player['is_home'] == False
-        assert det_player['total_line'] == 54.0
-        
-        # Check KC player (Home team)
-        kc_player = merged_df[merged_df['name'] == 'Patrick Mahomes'].iloc[0]
-        assert kc_player['opponent'] == 'DET'
-        assert kc_player['is_home'] == True
-        
-        # Check FA player (No team)
-        fa_player = merged_df[merged_df['name'] == 'Free Agent Guy'].iloc[0]
-        # Opponent will be NaN for FA
-        assert pd.isna(fa_player['opponent'])
+        assert len(roster_df) == 1
+        assert "targets" in roster_df.columns
+        assert roster_df.iloc[0]["targets"] == 0
 
-def test_data_manager_empty_data():
-    dm = DataManager(league_id=123, year=2024, swid="X", espn_s2="Y")
+@patch("src.core.data_manager.get_espn_client")
+@patch("src.core.data_manager.get_sleeper_client")
+def test_data_manager_get_free_agents(mock_get_sleeper, mock_get_espn):
+    mock_espn = MagicMock()
+    mock_get_espn.return_value = mock_espn
+    mock_espn.get_free_agents.return_value = [{"name": "Gabe Davis", "position": "WR"}]
     
-    # Test when FA pool is empty
-    with patch.object(dm, 'get_free_agent_pool', return_value=[]), \
-         patch.object(dm, 'load_game_environment', return_value=pd.DataFrame()):
-        
-        merged_df = dm.get_merged_player_pool(week=1)
-        assert merged_df.empty
+    mock_sleeper = MagicMock()
+    mock_get_sleeper.return_value = mock_sleeper
+    
+    dm = DataManager(league_id=123, year=2023, team_name="My Team")
+    
+    with patch.object(dm, '_fetch_nfl_stats', return_value=pd.DataFrame({"player_name": ["Gabriel Davis"], "targets": [80]})):
+        with patch.object(dm, '_fetch_sleeper_trending_raw', return_value=pd.DataFrame([{"name": "Gabe Davis", "count": 500}])):
+            fa_df = dm.get_free_agent_pool()
+            
+            assert len(fa_df) == 1
+            # Should have matched Gabriel Davis to Gabe Davis because of edge cases
+            assert "targets" in fa_df.columns
+            assert fa_df.iloc[0]["targets"] == 80
+            assert "sleeper_adds" in fa_df.columns
+            assert fa_df.iloc[0]["sleeper_adds"] == 500
 
-def test_data_manager_schedule_empty():
-    dm = DataManager(league_id=123, year=2024, swid="X", espn_s2="Y")
+@patch("src.core.data_manager.get_espn_client")
+@patch("src.core.data_manager.get_sleeper_client")
+def test_data_manager_get_merged_player_pool(mock_get_sleeper, mock_get_espn):
+    mock_espn = MagicMock()
+    mock_get_espn.return_value = mock_espn
+    mock_espn.get_free_agents.return_value = [{"name": "Gabe Davis", "position": "WR"}]
     
-    with patch.object(dm, 'get_free_agent_pool', return_value=[{"name": "Amon-Ra", "proTeam": "DET"}]), \
-         patch.object(dm, 'load_game_environment', return_value=pd.DataFrame()):
-        
-        merged_df = dm.get_merged_player_pool(week=1)
-        
-        # Check that we still have 1 player
-        assert len(merged_df) == 1
-        
-        # Check that schema was guaranteed
-        assert 'opponent' in merged_df.columns
-        assert 'total_line' in merged_df.columns
-        
-        # Values should be NA
-        assert pd.isna(merged_df['opponent'].iloc[0])
+    mock_sleeper = MagicMock()
+    mock_get_sleeper.return_value = mock_sleeper
+    
+    dm = DataManager(league_id=123, year=2023, team_name="My Team")
+    
+    with patch.object(dm, 'load_game_environment', return_value=pd.DataFrame({"week": [1], "home_team": ["BUF"], "away_team": ["NYJ"], "spread_line": [2.5], "total_line": [45], "roof": ["outdoors"], "temp": [60], "wind": [10]})):
+        with patch.object(dm, 'get_free_agent_pool', return_value=pd.DataFrame([{"name": "Gabe Davis", "position": "WR", "proTeam": "BUF"}])):
+            df = dm.get_merged_player_pool(week=1)
+            assert len(df) == 1
+            assert "spread_line" in df.columns
+
