@@ -27,11 +27,11 @@ dm = get_data_manager()
 st.sidebar.header("Settings")
 
 try:
-    client = dm.load_espn_context()
+    client = dm.espn
     league_name = getattr(client.league, 'settings', None)
     league_name_str = getattr(league_name, 'name', f"League {settings.LEAGUE_ID}")
     st.sidebar.subheader(league_name_str)
-except Exception:
+except AttributeError:
     st.sidebar.subheader(f"League {settings.LEAGUE_ID}")
 
 selected_week = st.sidebar.number_input("NFL Week", min_value=1, max_value=18, value=1)
