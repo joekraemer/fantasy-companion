@@ -46,6 +46,10 @@ From the workspace root, make sure your virtual environment is active:
 2. **Mocking External APIs:** The app relies on live data (`espn-api`, NFLverse Parquet). You MUST mock network requests and API responses in unit tests using `unittest.mock.patch` or `requests-mock`. Tests should not fail during the off-season or without an internet connection.
 3. **Focus:** Ensure that data transformation logic (e.g., merging Vegas odds with free-agent pools) is thoroughly tested with dummy dataframes.
 
+### Streamlit AppTest (UI & Caching)
+When modifying `app.py`, UI view components, or any `DataManager` methods using `@st.cache_data` or `@st.cache_resource`, you MUST write and run a simulation using Streamlit's `AppTest` framework (`from streamlit.testing.v1 import AppTest`). 
+Standard unit tests are insufficient for verifying Streamlit's internal serialization, parameter hashing, and component lifecycle logic.
+
 ## 🐙 GitHub Integration & AI Workflow
 
 AI Agents are expected to actively manage project state and code quality via the GitHub CLI (`gh`).
