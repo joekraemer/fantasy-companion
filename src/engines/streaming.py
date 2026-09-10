@@ -19,34 +19,43 @@ class StreamingEngine:
             home['team'] = home['home_team']
             home['opponent'] = home['away_team']
             home['is_home'] = True
-            # Home Implied = (Total / 2) - (Spread / 2)
-            # Away Implied = (Total / 2) + (Spread / 2)
-            home['implied_points'] = (home['total_line'] / 2) - (home['spread_line'] / 2)
-            home['opp_implied_points'] = (home['total_line'] / 2) + (home['spread_line'] / 2)
+            
+            if 'total_line' in home.columns and 'spread_line' in home.columns:
+                home['implied_points'] = (home['total_line'] / 2) - (home['spread_line'] / 2)
+                home['opp_implied_points'] = (home['total_line'] / 2) + (home['spread_line'] / 2)
+            else:
+                home['implied_points'] = np.nan
+                home['opp_implied_points'] = np.nan
         
         away = df.copy()
         if not away.empty:
             away['team'] = away['away_team']
             away['opponent'] = away['home_team']
             away['is_home'] = False
-            away['implied_points'] = (away['total_line'] / 2) + (away['spread_line'] / 2)
-            away['opp_implied_points'] = (away['total_line'] / 2) - (away['spread_line'] / 2)
-            # Flip spread from the away team's perspective
-            away['spread_line'] = -away['spread_line']
+            
+            if 'total_line' in away.columns and 'spread_line' in away.columns:
+                away['implied_points'] = (away['total_line'] / 2) + (away['spread_line'] / 2)
+                away['opp_implied_points'] = (away['total_line'] / 2) - (away['spread_line'] / 2)
+                away['spread_line'] = -away['spread_line']
+            else:
+                away['implied_points'] = np.nan
+                away['opp_implied_points'] = np.nan
         
         combined = pd.concat([home, away]).dropna(subset=['team']).reset_index(drop=True)
+        # Use MultiIndex for O(1) row lookups instead of expensive boolean masks
+        if not combined.empty:
+            combined.set_index(['team', 'week'], inplace=True, drop=False)
         return combined
 
     def score_dst(self, team: str, week: int) -> float:
         """Scores a D/ST based on Vegas odds."""
-        if self.team_games.empty:
-            return 0.0
-            
-        game = self.team_games[(self.team_games['team'] == team) & (self.team_games['week'] == week)]
-        if game.empty:
+        if self.team_games.empty or (team, week) not in self.team_games.index:
             return 0.0 # BYE week
             
-        game = game.iloc[0]
+        game = self.team_games.loc[(team, week)]
+        if isinstance(game, pd.DataFrame):
+            game = game.iloc[0]
+            
         score = 0.0
         
         opp_implied = game.get('opp_implied_points', np.nan)
@@ -72,14 +81,13 @@ class StreamingEngine:
 
     def score_kicker(self, team: str, week: int) -> float:
         """Scores a Kicker based on Vegas odds and weather."""
-        if self.team_games.empty:
+        if self.team_games.empty or (team, week) not in self.team_games.index:
             return 0.0
             
-        game = self.team_games[(self.team_games['team'] == team) & (self.team_games['week'] == week)]
-        if game.empty:
-            return 0.0
+        game = self.team_games.loc[(team, week)]
+        if isinstance(game, pd.DataFrame):
+            game = game.iloc[0]
             
-        game = game.iloc[0]
         score = 0.0
         
         implied = game.get('implied_points', np.nan)
@@ -123,16 +131,23 @@ class StreamingEngine:
             
         teams = self.team_games['team'].dropna().unique()
         data = []
+        gamma = 0.85
         
         for team in teams:
             row = {'Team': team}
+            corridor_total = 0.0
+            
             for i in range(weeks_ahead):
                 week = start_week + i
                 if position.upper() == 'DST':
-                    row[f'Wk {week}'] = self.score_dst(team, week)
+                    score = self.score_dst(team, week)
                 else:
-                    row[f'Wk {week}'] = self.score_kicker(team, week)
-            row['Corridor'] = self.corridor_score(team, start_week, weeks_ahead, position)
+                    score = self.score_kicker(team, week)
+                    
+                row[f'Wk {week}'] = score
+                corridor_total += score * (gamma ** i)
+                
+            row['Corridor'] = round(corridor_total, 2)
             data.append(row)
             
         df = pd.DataFrame(data).sort_values(by='Corridor', ascending=False).reset_index(drop=True)
