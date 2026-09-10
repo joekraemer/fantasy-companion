@@ -77,3 +77,13 @@ def test_invalid_season_year():
     with patch.dict(os.environ, mock_env, clear=True):
         with pytest.raises(EnvironmentError, match="SEASON_YEAR must be an integer."):
             get_settings()
+
+def test_optional_swid_and_espn_s2():
+    mock_env = {
+        "LEAGUE_ID": "12345"
+    }
+    with patch.dict(os.environ, mock_env, clear=True):
+        settings = get_settings()
+        assert settings.LEAGUE_ID == 12345
+        assert settings.SWID is None
+        assert settings.ESPN_S2 is None

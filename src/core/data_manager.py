@@ -17,7 +17,7 @@ class DataManager:
         self.swid = swid
         self.espn_s2 = espn_s2
 
-    @st.cache_data(ttl=900) # 15 minutes TTL for live league data
+    @st.cache_resource(ttl=900) # 15 minutes TTL for live league data
     def _get_espn_client(_self) -> ESPNClient:
         """
         Internal cached method to get the ESPNClient.
