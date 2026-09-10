@@ -50,6 +50,13 @@ From the workspace root, make sure your virtual environment is active:
 When modifying `app.py`, UI view components, or any `DataManager` methods using `@st.cache_data` or `@st.cache_resource`, you MUST write and run a simulation using Streamlit's `AppTest` framework (`from streamlit.testing.v1 import AppTest`). 
 Standard unit tests are insufficient for verifying Streamlit's internal serialization, parameter hashing, and component lifecycle logic.
 
+```python
+# Example:
+from streamlit.testing.v1 import AppTest
+at = AppTest.from_file("app.py").run()
+assert not at.exception
+```
+
 ## 🐙 GitHub Integration & AI Workflow
 
 AI Agents are expected to actively manage project state and code quality via the GitHub CLI (`gh`).
