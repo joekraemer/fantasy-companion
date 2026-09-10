@@ -51,7 +51,10 @@ if nav_option == "Home":
         st.header("My Roster")
         try:
             roster = dm.get_my_roster(settings.TEAM_NAME)
-            st.dataframe(roster, use_container_width=True, hide_index=True)
+            if roster:
+                st.dataframe(roster, use_container_width=True, hide_index=True)
+            else:
+                st.info("No players found on your roster.")
         except Exception as e:
             st.error(f"Error loading roster: {e}")
             
@@ -60,14 +63,20 @@ if nav_option == "Home":
         try:
             fa_list = dm.get_free_agent_pool(size=100)
             st.metric("Free Agents Loaded", len(fa_list))
-            st.dataframe(pd.DataFrame(fa_list), use_container_width=True, hide_index=True)
+            if fa_list:
+                st.dataframe(pd.DataFrame(fa_list), use_container_width=True, hide_index=True)
+            else:
+                st.info("No free agents found.")
         except Exception as e:
             st.error(f"Error loading free agents: {e}")
             
     st.header(f"NFL Schedule (Week {selected_week})")
     try:
         week_schedule = dm.get_weekly_schedule(selected_week)
-        st.dataframe(week_schedule, use_container_width=True, hide_index=True)
+        if not week_schedule.empty:
+            st.dataframe(week_schedule, use_container_width=True, hide_index=True)
+        else:
+            st.info("No games found for this week.")
     except Exception as e:
         st.error(f"Error loading schedule: {e}")
 
