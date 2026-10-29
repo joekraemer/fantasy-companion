@@ -11,7 +11,8 @@ def load_sleeper_players() -> Dict[str, Any]:
     Downloads the master player dictionary from Sleeper.
     Cached for 24 hours to avoid repeatedly downloading the 40MB payload.
     """
-    response = requests.get("https://api.sleeper.app/v1/players/nfl")
+    # ~40 MB: the read timeout is per gap between chunks, not the whole download.
+    response = requests.get("https://api.sleeper.app/v1/players/nfl", timeout=(10, 60))
     response.raise_for_status()
     return response.json()
 
