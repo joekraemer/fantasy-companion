@@ -35,3 +35,18 @@ def test_get_trending_adds_error():
               
         with pytest.raises(requests.exceptions.HTTPError):
             client.get_trending_adds()
+
+
+def test_every_sleeper_request_has_a_timeout():
+    """A stalled API must not hang the Streamlit run forever."""
+    from src.engines import sentiment
+
+    client = SleeperClient()
+    with requests_mock.Mocker() as m:
+        m.get(requests_mock.ANY, json=[])
+        client.get_trending_adds()
+        client.get_trending_drops()
+        sentiment.load_sleeper_players.__wrapped__()
+        assert m.call_count == 3
+        for req in m.request_history:
+            assert req.timeout is not None, req.url
